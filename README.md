@@ -30,3 +30,4 @@ This project was created as part of the **Analista Programador program at CEI \-
 ## **Authors**
 
 Pedro Betbeder
+Ramiro Pereira
