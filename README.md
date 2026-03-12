@@ -25,7 +25,7 @@ Tutti Frutti Web is a web application developed as an academic project based on 
 
 ## **Project Purpose**
 
-This project was created as part of the **Analista Programador program at CEI \- CLAEH**, integrating concepts from software engineering, web development, and system architecture.
+This project was developed as the final project for the course Desarrollo y Diseño de Aplicaciones (DDA) during the fourth semester of the Analista Programador program at CTC - CLAEH. The objective was to design and implement a complete web application, applying concepts of software engineering, web development, and system architecture.
 
 ## **Authors**
 
