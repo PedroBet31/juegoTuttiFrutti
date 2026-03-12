@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultado Final - Tutti Frutti</title>
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+
+    <style>
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Poppins', sans-serif;
+
+            background: linear-gradient(135deg, #7a4dff, #8ecbff, #7a4dff);
+            background-size: 250% 250%;
+            animation: waveBg 4s ease-in-out infinite;
+
+            padding: 35px 0;
+        }
+
+        @keyframes waveBg {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .card-final {
+            background: rgba(255,255,255,0.75);
+            border-radius: 26px;
+            padding: 40px;
+            max-width: 980px;
+            margin: 0 auto;
+
+            backdrop-filter: blur(15px);
+            box-shadow: 0 12px 34px rgba(94, 51, 180, 0.25);
+
+            animation: popIn 0.7s ease-out both;
+        }
+
+        @keyframes popIn {
+            0%   { opacity: 0; transform: scale(0.85); filter: blur(4px); }
+            70%  { opacity: 1; transform: scale(1.03); filter: blur(0); }
+            100% { transform: scale(1); }
+        }
+
+        h1 {
+            font-weight: 900;
+            font-size: 2.8rem;
+            color: #392b51;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .puntaje-final {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-top: 15px;
+            color: #5f2dab;
+            text-shadow: 0 3px 10px rgba(95, 45, 171, 0.35);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .subinfo {
+            font-size: 1rem;
+            color: #444;
+        }
+
+        table {
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.85);
+        }
+
+        thead {
+            background: linear-gradient(135deg, #7a4dff, #3da4ff) !important;
+            color: white !important;
+        }
+
+        tbody tr:hover {
+            background: rgba(125, 75, 255, 0.08);
+        }
+
+        h4 {
+            font-weight: 800;
+            color: #4d3572;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+
+        h5 {
+            font-weight: 700;
+            color: #392b51;
+            margin-top: 12px;
+        }
+
+        .badge-puntos {
+            background: linear-gradient(135deg, #7a4dff, #3da4ff);
+            padding: 6px 14px;
+            border-radius: 14px;
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 3px 10px rgba(90,40,190,0.25);
+        }
+
+        .btn-volver {
+            background: linear-gradient(135deg, #7a4dff, #3da4ff);
+            border: none;
+            padding: 14px 34px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            border-radius: 26px;
+            color: white;
+            box-shadow: 0 6px 20px rgba(90, 40, 190, 0.35);
+            transition: 0.25s ease;
+        }
+
+        .btn-volver:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 24px rgba(90, 40, 190, 0.45);
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="card-final">
+
+    <div class="text-center mb-4">
+        <h1>🎉 ¡Partida Finalizada! 🎉</h1>
+
+        <div class="puntaje-final">
+            <span th:text="${jugador.puntaje}"></span>
+        </div>
+
+        <div class="subinfo mt-2">
+            Rondas jugadas:
+            <span th:text="${totalRondas}"></span>
+        </div>
+    </div>
+
+    <hr>
+
+    <h4>📋 Resumen por ronda</h4>
+
+    <div th:each="r : ${rondas}" style="margin-top:18px;">
+
+        <h5>Letra: <span th:text="${r.letra}"></span></h5>
+
+        <table class="table table-sm text-center mt-2">
+            <thead>
+                <tr>
+                    <th>Categoría</th>
+                    <th>Respuesta</th>
+                    <th>Puntos</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr th:each="resp : ${r.respuestas}">
+                    <td th:text="${resp.categoria.nombre}"></td>
+                    <td th:text="${resp.texto}"></td>
+
+                    <td>
+                        <span class="badge-puntos" th:text="${resp.puntos}"></span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="/lobby" class="btn-volver">Volver al Lobby</a>
+    </div>
+
+</div>
+
+</body>
+</html>

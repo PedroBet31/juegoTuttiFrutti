@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Crear Sala - Tutti Frutti</title>
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+
+  <style>
+
+    body {
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Poppins', sans-serif;
+
+      background: linear-gradient(135deg, #7a4dff, #8ecbff, #7a4dff);
+      background-size: 250% 250%;
+      animation: waveBg 4s ease-in-out infinite;
+      padding: 35px 0;
+    }
+
+    @keyframes waveBg {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .card-select {
+      width: 850px;
+      padding: 40px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 12px 38px rgba(95, 45, 171, 0.28);
+      animation: cardDrop 0.65s ease-out;
+    }
+
+    @keyframes cardDrop {
+      0%   { opacity: 0; transform: translateY(-20px) scale(0.92); filter: blur(4px); }
+      70%  { opacity: 1; transform: translateY(3px) scale(1.03); filter: blur(0); }
+      100% { transform: translateY(0) scale(1); }
+    }
+
+    h2 {
+      font-weight: 800;
+      color: #392b51;
+      margin-bottom: 25px;
+    }
+
+    .rounds-box, .timer-box, .cat-box {
+      background: rgba(255,255,255,0.85);
+      padding: 18px;
+      border-radius: 14px;
+      border: 2px solid rgba(125,75,255,0.2);
+    }
+
+    .start-btn {
+      margin-top: 25px;
+      font-size: 1.25rem;
+      padding: 14px;
+      border-radius: 30px;
+      width: 60%;
+      border: none;
+      background: linear-gradient(135deg, #7a4dff, #3da4ff);
+      color: white;
+      font-weight: 700;
+      box-shadow: 0 6px 22px rgba(90,40,190,0.35);
+      transition: 0.25s ease;
+    }
+
+    .btn-back {
+      margin-top: 25px;
+      font-size: 1.25rem;
+      padding: 14px;
+      border-radius: 30px;
+      width: 60%;
+      border: none;
+      background: rgba(50,50,50,0.25);
+      color: #2b2b2b;
+      font-weight: 700;
+      transition: all 0.25s ease;
+      box-shadow: 0 6px 22px rgba(90,40,190,0.35);
+    }
+    
+    .cat-warning {
+      background: rgba(255,230,90,0.92);
+      border-left: 6px solid #d4a100;
+      padding: 12px 16px;
+      border-radius: 12px;
+      margin-bottom: 18px;
+      font-weight: 600;
+      color: #3c3300;
+      text-align: center;
+      display: none; /* inicia oculto */
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card-select">
+
+  <h2 class="text-center">Configurar Sala Multijugador</h2>
+
+  <!-- 🔥 AVISO DE LÍMITE (igual que individual) -->
+  <div id="catLimitWarning" class="cat-warning">
+    ⚠ Podés elegir entre <b>1 y 8 categorías</b>.
+  </div>
+
+  <form id="createForm">
+
+    <div class="row">
+
+      <!-- CATEGORÍAS -->
+      <div class="col-6">
+        <label class="form-check-label mb-2">Categorías:</label>
+
+        <div id="categoriaContainer" class="cat-box mb-3">
+
+          <div class="form-check">
+            <input class="form-check-input catCheck" type="checkbox" name="categorias" value="Nombre" checked>
+            <label class="form-check-label">Nombre</label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input catCheck" type="checkbox" name="categorias" value="Apellido" checked>
+            <label class="form-check-label">Apellido</label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input catCheck" type="checkbox" name="categorias" value="País">
+            <label class="form-check-label">País</label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input catCheck" type="checkbox" name="categorias" value="Ciudad">
+            <label class="form-check-label">Ciudad</label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input catCheck" type="checkbox" name="categorias" value="Animal">
+            <label class="form-check-label">Animal</label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input catCheck" type="checkbox" name="categorias" value="Comida">
+            <label class="form-check-label">Comida</label>
+          </div>
+
+        </div>
+
+        <!-- Categoría personalizada -->
+        <button type="button" id="btnAddCat" class="btn btn-outline-primary w-100 mb-2">
+          ➕ Agregar categoría personalizada
+        </button>
+
+        <div id="customCatInput" style="display:none;">
+          <input id="newCatName" type="text" class="form-control" placeholder="Ej: Color, Marca...">
+          <button type="button" id="btnConfirmCat" class="btn btn-success w-100 mt-2">
+            Agregar
+          </button>
+        </div>
+      </div>
+
+      <!-- RONDAS + TIEMPO -->
+      <div class="col-6">
+
+        <label class="form-check-label mb-2">Rondas:</label>
+
+        <div class="rounds-box mb-3">
+
+          <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preRondas" value="3" checked><label class="form-check-label">3 rondas</label></div>
+          <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preRondas" value="5"><label class="form-check-label">5 rondas</label></div>
+          <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preRondas" value="8"><label class="form-check-label">8 rondas</label></div>
+          <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preRondas" value="10"><label class="form-check-label">10 rondas</label></div>
+          <div class="form-check mt-2"><input class="form-check-input" type="radio" name="preRondas" value="custom"><label class="form-check-label">Personalizado</label></div>
+
+          <input id="customRounds" type="number" min="1" max="20"
+                 placeholder="1 - 20"
+                 class="form-control mt-2" disabled>
+
+        </div>
+
+        <label class="form-check-label mb-2">Tiempo por ronda:</label>
+
+        <div class="timer-box">
+          <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preTiempo" value="30" checked><label class="form-check-label">30 segundos</label></div>
+          <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preTiempo" value="45"><label class="form-check-label">45 segundos</label></div>
+          <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preTiempo" value="60"><label class="form-check-label">60 segundos</label></div>
+          <div class="form-check mt-2"><input class="form-check-input" type="radio" name="preTiempo" value="custom"><label class="form-check-label">Personalizado</label></div>
+
+          <input id="customTime" type="number" min="10" max="300"
+                 placeholder="10 - 300"
+                 class="form-control mt-2" disabled>
+
+        </div>
+
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-center">
+      <button type="submit" class="start-btn">Crear Sala</button>
+    </div>
+
+    <div class="d-flex justify-content-center">
+      <a href="/modo-multijugador" class="btn btn-back">Volver</a>
+    </div>
+
+    <div id="status" class="mt-3 text-center"></div>
+
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+<script>
+
+  let stompClient = null;
+  const statusEl = document.getElementById('status');
+  const catWarning = document.getElementById('catLimitWarning');
+  const maxCategoryLength = 12;  // Límite de caracteres para categorías personalizadas
+
+  function validateCategoryLimit() {
+    const total = document.querySelectorAll('.catCheck:checked').length;
+
+    if (total > 8) {
+      this.checked = false;
+      catWarning.style.display = "block";
+      return;
+    }
+
+    if (total < 1) {
+      this.checked = true;
+      catWarning.style.display = "block";
+      return;
+    }
+
+    catWarning.style.display = "none";
+  }
+
+  document.querySelectorAll('.catCheck')
+    .forEach(chk => chk.addEventListener("change", validateCategoryLimit));
+
+  document.querySelectorAll('input[name="preRondas"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      customRounds.disabled = radio.value !== "custom";
+    });
+  });
+
+  document.querySelectorAll('input[name="preTiempo"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      customTime.disabled = radio.value !== "custom";
+    });
+  });
+
+  btnAddCat.onclick = () => {
+    customCatInput.style.display = "block";
+    newCatName.focus();
+  };
+
+  btnConfirmCat.onclick = () => {
+    const name = newCatName.value.trim();
+    if (!name) return;
+
+    // Validación de longitud de categoría personalizada
+    if (name.length > maxCategoryLength) {
+      alert("La categoría no puede tener más de 12 caracteres.");
+      return;
+    }
+
+    const div = document.createElement("div");
+    div.className = "form-check mt-1";
+    div.innerHTML = `
+      <input class="form-check-input catCheck" type="checkbox" name="categorias" value="${name}" checked>
+      <label class="form-check-label">${name}</label>
+    `;
+    categoriaContainer.appendChild(div);
+
+    div.querySelector(".catCheck")
+       .addEventListener("change", validateCategoryLimit);
+
+    validateCategoryLimit.call(div.querySelector(".catCheck"));
+
+    newCatName.value = "";
+    customCatInput.style.display = "none";
+  };
+
+  function connectWS() {
+    return new Promise((resolve) => {
+      if (stompClient && stompClient.connected) return resolve();
+
+      const socket = new SockJS('/ws');
+      stompClient = Stomp.over(socket);
+
+      stompClient.connect({}, () => {
+
+        stompClient.subscribe('/user/queue/room-created', msg => {
+          const body = JSON.parse(msg.body);
+          const roomId = body.roomId;
+
+          statusEl.innerHTML = "<b>Sala creada:</b> " + roomId;
+
+          setTimeout(() => {
+            window.location.href = "/modo-multijugador/sala/" + roomId;
+          }, 400);
+        });
+
+        stompClient.subscribe('/user/queue/errors', msg => {
+          const body = JSON.parse(msg.body);
+          statusEl.innerHTML =
+            `<span class="text-danger">Error: ${body.message}</span>`;
+
+          catWarning.style.display = "block";
+        });
+
+        resolve();
+      });
+    });
+  }
+
+  document.getElementById("createForm").onsubmit = async (e) => {
+    e.preventDefault();
+
+    const cats = document.querySelectorAll('.catCheck:checked').length;
+    if (cats < 1 || cats > 8) {
+      catWarning.style.display = "block";
+      return;
+    }
+
+    statusEl.textContent = "Creando sala...";
+
+    await connectWS();
+
+    const categorias = [...document.querySelectorAll('input[name="categorias"]:checked')]
+      .map(c => ({ nombre: c.value }));
+
+    const selectedR = document.querySelector('input[name="preRondas"]:checked').value;
+
+    let totalRondas;
+    if (selectedR === "custom") {
+      const val = parseInt(customRounds.value);
+      totalRondas = isNaN(val) ? 1 : val;
+    } else {
+      totalRondas = parseInt(selectedR);
+    }
+
+    const selectedT = document.querySelector('input[name="preTiempo"]:checked').value;
+
+    let tiempo;
+    if (selectedT === "custom") {
+      const val = parseInt(customTime.value);
+      tiempo = isNaN(val) ? 30 : val;
+    } else {
+      tiempo = parseInt(selectedT);
+    }
+
+    const payload = {
+      categorias,
+      totalRondas,
+      tiempoPorRonda: tiempo,
+      ptsValidaUnica: 10,
+      ptsValidaDuplicada: 5
+    };
+
+    stompClient.send('/app/create-room', {}, JSON.stringify(payload));
+
+    statusEl.textContent = "Solicitud enviada...";
+  };
+
+</script>
+
+
+</body>
+</html>

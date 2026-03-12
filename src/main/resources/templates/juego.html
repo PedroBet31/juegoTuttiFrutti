@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Juego - Tutti Frutti</title>
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+
+    <style>
+
+         body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #7a4dff, #8ecbff, #7a4dff);
+            background-size: 250% 250%;
+            animation: waveBg 4s ease-in-out infinite;
+            padding: 35px 0;
+        }
+
+        @keyframes waveBg {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #countdown-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #8ecbffd0, #cfe8ffe0);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        #countdown-number {
+            font-size: 200px;
+            font-weight: 900;
+            color: #5f2dab;
+            text-shadow: 0px 10px 35px rgba(95,45,171,0.35);
+            opacity: 0;
+        }
+
+        @keyframes popViolet {
+            0%   { transform: scale(0.3); opacity: 0; filter: blur(5px); color: #9a56f0; }
+            45%  { transform: scale(1.28); opacity: 1; filter: blur(0); }
+            100% { transform: scale(1); opacity: 1; color: #5f2dab; }
+        }
+
+        @keyframes boomFinal {
+            0%   { transform: scale(0.4); opacity: 0; color: #b388ff; }
+            35%  { transform: scale(2.2); opacity: 1; color: #e14fff; text-shadow: 0 0 40px #ff4ff9; }
+            55%  { transform: scale(1.5) rotate(4deg); color: #d633ff; }
+            100% { transform: scale(1) rotate(-2deg); opacity: 0; color: #a259ff; }
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        .top-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            margin-bottom: 25px;
+        }
+
+        .letra-box {
+            font-size: 140px;
+            font-weight: 800;
+            color: #392b51;
+            background: rgba(255, 255, 255, 0.75);
+            padding: 25px 55px;
+            border-radius: 30px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+        }
+
+        .timer-circle {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            font-size: 42px;
+            font-weight: 700;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(10px);
+            color: #d9534f;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.18);
+        }
+
+        #gridCategorias {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 18px;
+            margin-top: 25px;
+        }
+
+        .cat-card {
+            padding: 18px;
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(10px);
+            border-radius: 18px;
+            box-shadow: 0 4px 18px rgba(90, 40, 190, 0.22);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .categoria-label {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #392b51;
+        }
+
+        .error-texto {
+            font-size: 0.9rem;
+            color: #c62828;
+            margin-top: 4px;
+            display: none;
+        }
+
+        input[type="text"] {
+            border-radius: 12px;
+            padding: 12px;
+            border: 2px solid #bda2ff;
+        }
+
+        input[type="text"].invalido {
+            border-color: #ff3b3b;
+            background-color: #ffe6e6;
+        }
+
+        .tutti-btn {
+            margin-top: 25px;
+            font-size: 2rem;
+            width: 100%;
+            padding: 16px;
+            border-radius: 25px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #7a4dff, #3da4ff);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 20px rgba(90,40,190,0.35);
+            transition: 0.25s ease;
+        }
+
+        .tutti-btn:disabled {
+            background: gray !important;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .tutti-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 24px rgba(90,40,190,0.45);
+        }
+
+        #esperando {
+            display: none;
+            font-size: 1.4rem;
+            margin-top: 30px;
+        }
+
+        .round-info {
+            margin-bottom: 16px;
+            font-weight: 700;
+            color: #153c5a;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div id="countdown-overlay">
+    <div id="countdown-number">3</div>
+</div>
+
+<div class="container text-center" id="game-container" style="display:none;">
+
+    <div class="mb-3 round-info">
+        Ronda <span id="rondaIndex">[[${rondaIndex}]]</span> de <span id="totalRondas">[[${totalRondas}]]</span>
+    </div>
+
+    <div class="top-row">
+        <span class="letra-box" th:text="${letra}">A</span>
+        <div id="timer" class="timer-circle" th:text="${tiempo}">60</div>
+    </div>
+
+    <form id="formRespuestas">
+        <div id="gridCategorias">
+
+            <div th:each="cat : ${categorias}" class="cat-card">
+                <label class="categoria-label" th:text="${cat.nombre}"></label>
+
+                <input type="text"
+                       class="form-control respInput"
+                       th:attr="data-categoria=${cat.nombre}"
+                       oninput="validarInput(this)">
+
+                <div class="error-texto">Solo se permiten letras (A–Z). No uses números ni símbolos.</div>
+            </div>
+
+        </div>
+
+        <button type="button" id="btnTutti" class="btn tutti-btn" onclick="enviarRespuestas()">
+            ¡TUTTI FRUTTI!
+        </button>
+    </form>
+
+    <div id="esperando">
+        <h3>Validando respuestas...</h3>
+        <p>Esto puede tardar unos segundos 👀</p>
+    </div>
+
+</div>
+<script>
+
+    function contieneCaracteresInvalidos(texto) {
+        // Solo letras y espacios. Permite tildes.
+        return !/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]*$/.test(texto);
+    }
+
+    function validarInput(input) {
+        const err = input.parentElement.querySelector(".error-texto");
+
+        if (contieneCaracteresInvalidos(input.value)) {
+            input.classList.add("invalido");
+            err.style.display = "block";
+        } else {
+            input.classList.remove("invalido");
+            err.style.display = "none";
+        }
+
+        controlarBoton();
+    }
+
+    function controlarBoton() {
+        const invalidos = document.querySelectorAll("input.invalido");
+        const btn = document.getElementById("btnTutti");
+        btn.disabled = invalidos.length > 0;
+    }
+
+    let valores = ["3", "2", "1", "YA!"];
+    let i = 0;
+
+    const overlay = document.getElementById("countdown-overlay");
+    const number = document.getElementById("countdown-number");
+
+    function playCountdown() {
+        let intervalo = setInterval(() => {
+
+            number.textContent = valores[i];
+
+            if (valores[i] === "YA!") {
+                number.style.animation = "boomFinal 1.1s ease forwards";
+            } else {
+                number.style.animation = "popViolet 0.95s ease forwards";
+            }
+
+            i++;
+
+            if (i >= valores.length) {
+                clearInterval(intervalo);
+
+                setTimeout(() => {
+                    overlay.style.display = "none";
+                    document.getElementById("game-container").style.display = "block";
+                    iniciarCronometro();
+                }, 850);
+            }
+
+        }, 1000);
+    }
+
+    playCountdown();
+
+    let tiempo = [[${tiempo}]];
+    let timer = document.getElementById("timer");
+    let intervalo;
+
+    function iniciarCronometro() {
+        intervalo = setInterval(() => {
+            tiempo--;
+            timer.textContent = tiempo;
+
+            if (tiempo <= 0) {
+                clearInterval(intervalo);
+
+                const invalidos = document.querySelectorAll("input.invalido");
+                if (invalidos.length > 0) {
+                    invalidos.forEach(inp => inp.classList.add("invalido"));
+                    return; // no se envía
+                }
+
+                enviarRespuestas();
+            }
+        }, 1000);
+    }
+
+    function enviarRespuestas() {
+        clearInterval(intervalo);
+
+        const invalidos = document.querySelectorAll("input.invalido");
+        if (invalidos.length > 0) {
+            invalidos.forEach(i => i.classList.add("invalido"));
+            return;
+        }
+
+        const inputs = document.querySelectorAll("input[data-categoria]");
+        let respuestas = [];
+
+        inputs.forEach(i => {
+            respuestas.push({
+                jugador: { nombre: "Jugador" },
+                categoria: { nombre: i.dataset.categoria },
+                texto: i.value
+            });
+        });
+
+        document.getElementById("formRespuestas").style.display = "none";
+        document.getElementById("esperando").style.display = "block";
+
+        fetch("/api/game/round/submit?usarGPT=true", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(respuestas)
+        })
+        .then(() => window.location.href = "/resultado");
+    }
+
+</script>
+
+</body>
+</html>

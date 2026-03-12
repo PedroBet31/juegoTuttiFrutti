@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Sala Multijugador - Tutti Frutti</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0;
+      font-family:'Poppins',sans-serif; background: linear-gradient(135deg,#7a4dff,#8ecbff,#7a4dff);
+      background-size:250% 250%; animation: waveBg 4s ease-in-out infinite; padding:35px 0;
+    }
+    @keyframes waveBg { 0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%} }
+
+    .card-room {
+      width: 920px;
+      padding: 28px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.74);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 14px 36px rgba(95,45,171,0.24);
+    }
+    h2 { font-weight:800; color:#392b51; margin-bottom:6px; }
+    .tag-room { font-weight:700; color:#2b2b2b; }
+    .btn-prim { background: linear-gradient(135deg,#7a4dff,#3da4ff); border:none; color:white; }
+    .btn-join { background:#059669; color:white; border:none; }
+    #players .list-group-item { font-weight:700; }
+    #estado { color:#153c5a; font-weight:700; }
+
+    @keyframes fadeIn {
+        from { opacity:0; transform: translateY(-6px); }
+        to   { opacity:1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <script th:inline="javascript">
+    const ROOM_ID = /*[[${roomId}]]*/ '';
+    const USERNAME = /*[[${username}]]*/ '';
+  </script>
+
+  <div class="card-room container">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h2>Sala Multijugador</h2>
+        <div>Usuario: <strong th:text="${username}">Jugador</strong></div>
+      </div>
+      <div class="text-end">
+        <div class="tag-room">ID sala: <span id="roomIdDisplay" th:text="${roomId}"></span></div>
+      </div>
+    </div>
+
+    <div class="row mt-4">
+      <div class="col-md-6">
+        <h5>Jugadores</h5>
+        <ul id="players" class="list-group players-list"></ul>
+
+        <div class="mt-3 d-flex gap-2">
+          <button id="btnJoin" class="btn btn-join">Unirme</button>
+
+          <!-- se oculta si NO sos host -->
+          <button id="btnStart" class="btn btn-prim" style="display:none;">Iniciar ronda</button>
+
+          <a onclick="if(stompClient){ stompClient.disconnect(); }"
+             href="/modo-multijugador"
+             class="btn btn-outline-secondary">
+             Salir
+          </a>
+        </div>
+
+        <div id="log" class="mt-3 small text-muted"></div>
+      </div>
+
+      <div class="col-md-6">
+        <h5>Estado</h5>
+
+        <div id="estado" class="p-3"
+             style="background:rgba(245,245,255,0.7); border-radius:10px; min-height:160px;">
+
+          <div id="estadoMensajes"></div>
+
+          <div id="estadoTexto"
+                style="margin-top:10px; font-weight:700; color:#153c5a;">
+             Esperando jugadores...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+<script>
+  let stompClient = null;
+  const roomId = ROOM_ID;
+  const username = USERNAME;
+
+  if (!roomId) {
+    alert("Error: roomId faltante.");
+    throw new Error("roomId missing");
+  }
+
+  const playersEl = document.getElementById('players');
+  const logEl = document.getElementById('log');
+  const estadoEl = document.getElementById('estado');
+  const btnStart = document.getElementById('btnStart');
+
+  function log(t) { logEl.textContent = t; }
+
+  function updateHostButton(hostName) {
+    console.log("🔥 HOST RECIBIDO:", hostName, " | TU NOMBRE:", username);
+
+    if (!hostName) {
+      btnStart.style.display = "none";
+      return;
+    }
+
+    if (hostName.trim().toLowerCase() === username.trim().toLowerCase()) {
+      btnStart.style.display = "inline-block";
+    } else {
+      btnStart.style.display = "none";
+    }
+  }
+
+  function connect() {
+    if (stompClient && stompClient.connected) return Promise.resolve();
+
+    return new Promise((resolve, reject) => {
+      const socket = new SockJS('/ws');
+      stompClient = Stomp.over(socket);
+
+      stompClient.connect({}, () => {
+        log("Conectado a WS");
+
+        stompClient.subscribe(`/topic/room/${roomId}/players`, msg => {
+          const payload = JSON.parse(msg.body);
+          console.log("🔥 PlayersDTO recibido:", payload);
+
+          renderPlayers(payload.jugadores || []);
+          updateHostButton(payload.hostName);
+
+          estadoEl.querySelector("#estadoTexto").textContent =
+            "Jugadores conectados: " + (payload.jugadores?.length || 0);
+        });
+
+        stompClient.subscribe(`/topic/room/${roomId}/round-start`, msg => {
+          sessionStorage.setItem("multiplayerRoundStart", msg.body);
+          window.location.href = "/modo-multijugador/game/" + encodeURIComponent(roomId);
+        });
+
+        stompClient.subscribe(`/topic/room/${roomId}/system`, msg => {
+          console.log("📢 System message recibido:", msg.body);
+
+          let payload;
+          try {
+              payload = JSON.parse(msg.body);
+          } catch {
+              payload = { message: msg.body };
+          }
+
+          showSystemMessage(payload.message);
+        });
+
+        stompClient.subscribe("/user/queue/errors", msg => {
+          const body = JSON.parse(msg.body);
+          log("ERROR: " + (body.message || JSON.stringify(body)));
+        });
+
+        resolve();
+      }, err => {
+        log("No se pudo conectar al servidor WS.");
+        reject(err);
+      });
+    });
+  }
+
+  function renderPlayers(list) {
+    playersEl.innerHTML = "";
+    list.forEach(p => {
+      const li = document.createElement("li");
+      li.className = "list-group-item";
+      li.textContent = p;
+      playersEl.appendChild(li);
+    });
+  }
+
+  function showSystemMessage(text) {
+    const container = document.getElementById("estadoMensajes");
+
+    if (!container) {
+        console.error("ERROR: No existe #estadoMensajes");
+        return;
+    }
+
+    const box = document.createElement("div");
+    box.style.padding = "10px 12px";
+    box.style.marginBottom = "10px";
+    box.style.borderRadius = "10px";
+    box.style.background = "rgba(255, 249, 196, 0.95)";
+    box.style.borderLeft = "5px solid #f0ad4e";
+    box.style.fontWeight = "600";
+    box.style.color = "#7a4d00";
+    box.style.boxShadow = "0 3px 8px rgba(0,0,0,0.15)";
+    box.style.animation = "fadeIn 0.4s ease-out";
+    box.innerHTML = `📢 ${text}`;
+
+    container.prepend(box);
+  }
+
+  document.getElementById("btnJoin").onclick = async function () {
+    try {
+      await connect();
+      stompClient.send(`/app/room/${roomId}/join`, {}, {});
+      this.disabled = true;
+      log("Solicitud de unión enviada...");
+    } catch (e) { log("Error de conexión"); }
+  };
+
+  btnStart.onclick = async function () {
+    try {
+      await connect();
+      stompClient.send(`/app/room/${roomId}/start`, {}, {});
+      log("Solicitud de inicio enviada (host).");
+    } catch (e) {
+      log("Error al iniciar ronda.");
+    }
+  };
+
+  connect().catch(()=>{});
+</script>
+</body>
+</html>

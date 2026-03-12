@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Juego - Tutti Frutti (Multijugador)</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+
+  <style>
+    body {
+      display:flex; justify-content:center; align-items:center;
+      min-height:100vh; margin:0; font-family:'Poppins',sans-serif;
+      background: linear-gradient(135deg, #7a4dff, #8ecbff, #7a4dff);
+      background-size: 250% 250%;
+      animation: waveBg 4s ease-in-out infinite;
+      padding: 35px 0;
+    }
+
+    @keyframes waveBg {
+      0%{background-position:0% 50%}
+      50%{background-position:100% 50%}
+      100%{background-position:0% 50%}
+    }
+
+    #countdown-overlay {
+      position: fixed; inset:0;
+      background: linear-gradient(135deg,#8ecbffd0,#cfe8ffe0);
+      backdrop-filter: blur(10px);
+      display:flex; justify-content:center; align-items:center;
+      z-index:99999;
+      animation: fadeIn .4s ease-out;
+    }
+    #countdown-number {
+      font-size:200px; font-weight:900; color:#5f2dab;
+      text-shadow:0 10px 35px rgba(95,45,171,0.35);
+      opacity:0;
+    }
+
+    @keyframes popViolet {
+      0%{transform:scale(.3);opacity:0;filter:blur(5px)}
+      45%{transform:scale(1.28);opacity:1}
+      100%{transform:scale(1);opacity:1}
+    }
+
+    @keyframes boomFinal {
+      0%{transform:scale(.4);opacity:0}
+      35%{transform:scale(2.2);opacity:1}
+      55%{transform:scale(1.5) rotate(4deg)}
+      100%{transform:scale(1) rotate(-2deg);opacity:0}
+    }
+
+    @keyframes fadeIn { 0%{opacity:0}100%{opacity:1} }
+
+    .card-game {
+      width: 920px;
+      padding: 30px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 34px rgba(94,51,180,0.28);
+      text-align:center;
+    }
+
+    .round-info {
+      font-weight:700; color:#153c5a; margin-bottom:12px;
+    }
+
+    .top-row {
+      display:flex; justify-content:center; align-items:center;
+      gap:40px;
+      margin-bottom:18px;
+    }
+
+    .letra-box {
+      font-size:120px; font-weight:800; color:#392b51;
+      background:rgba(255,255,255,0.75);
+      padding:22px 44px; border-radius:30px;
+    }
+
+    .timer-circle {
+      width:130px; height:130px; border-radius:50%;
+      font-size:42px; font-weight:700;
+      display:flex; align-items:center; justify-content:center;
+      background: rgba(255,255,255,0.85);
+      color:#d9534f; backdrop-filter: blur(10px);
+      box-shadow:0 5px 20px rgba(0,0,0,0.12);
+    }
+
+    #gridCategorias {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap:16px;
+      margin-top:18px;
+    }
+
+    .cat-card {
+      padding:16px;
+      background: rgba(255,255,255,0.85);
+      border-radius:14px;
+      box-shadow: 0 4px 18px rgba(90,40,190,0.12);
+    }
+
+    input.invalido {
+      border: 2px solid #ff4f4f !important;
+      background: #ffe9e9 !important;
+    }
+
+    .error-texto {
+      display:none;
+      color:#b30000;
+      font-weight:600;
+      font-size:0.9rem;
+      margin-top:4px;
+    }
+
+    .tutti-btn {
+      margin-top:20px; font-size:1.6rem; width:100%; padding:14px;
+      border-radius:24px; font-weight:800;
+      background: linear-gradient(135deg,#7a4dff,#3da4ff);
+      border:none; color:white;
+      box-shadow:0 6px 22px rgba(90,40,190,0.35);
+    }
+
+    .tutti-btn:hover { transform:translateY(-3px); }
+
+    #esperando {
+      display:none;
+      font-size:1.2rem;
+      margin-top:16px;
+      color:#333;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div id="countdown-overlay">
+  <div id="countdown-number">3</div>
+</div>
+
+<div class="card-game container" id="game-card" style="display:none;">
+  <div class="round-info">
+    Ronda <span id="rondaIndex">1</span> de <span id="totalRondas">1</span>
+  </div>
+
+  <div class="top-row">
+    <span class="letra-box" id="letraBox">A</span>
+    <div id="timer" class="timer-circle">60</div>
+  </div>
+
+  <form id="formRespuestas">
+    <div id="gridCategorias"></div>
+
+    <button type="button"
+            class="btn tutti-btn"
+            id="btnTutti"
+            disabled>
+      ¡TUTTI FRUTTI!
+    </button>
+  </form>
+
+  <div id="esperando">
+    <h3>Validando respuestas...</h3>
+    <p>Esto puede tardar unos segundos 👀</p>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+<script>
+
+  function contieneCaracteresInvalidos(txt) {
+    if (!txt) return false;
+    return !/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]+$/.test(txt);
+  }
+
+  function setupValidacionInputs() {
+    const inputs = document.querySelectorAll('input[data-categoria]');
+    const btn = document.getElementById("btnTutti");
+
+    inputs.forEach(inp => {
+
+      inp.addEventListener("input", () => {
+        const err = inp.parentElement.querySelector(".error-texto");
+
+        if (inp.value.trim() === "") {
+          inp.classList.remove("invalido");
+          err.style.display = "none";
+        } else if (contieneCaracteresInvalidos(inp.value.trim())) {
+          inp.classList.add("invalido");
+          err.textContent = "Solo se permiten letras (A-Z)";
+          err.style.display = "block";
+        } else {
+          inp.classList.remove("invalido");
+          err.style.display = "none";
+        }
+
+        validarFormulario();
+      });
+
+      // Agrego cartelito debajo si no existe
+      if (!inp.parentElement.querySelector(".error-texto")) {
+        const div = document.createElement("div");
+        div.className = "error-texto";
+        inp.parentElement.appendChild(div);
+      }
+    });
+
+    validarFormulario();
+  }
+
+  function validarFormulario() {
+    const inputs = document.querySelectorAll('input[data-categoria]');
+    const btn = document.getElementById("btnTutti");
+
+    for (let inp of inputs) {
+      const val = inp.value.trim();
+      if (val !== "" && contieneCaracteresInvalidos(val)) {
+        btn.disabled = true;
+        return;
+      }
+    }
+
+    btn.disabled = false;
+  }
+
+  const roomId = (() => {
+    const m = window.location.pathname.match(/\/game\/(.+)$/);
+    return m ? decodeURIComponent(m[1]) : null;
+  })();
+
+  if (!roomId) {
+    alert('roomId faltante.');
+    window.location.href = '/modo-multijugador';
+  }
+
+  let stompClient = null;
+  let hostName = null;
+  let alreadySubmitted = false;
+  let intervaloTimer = null;
+
+  function connectWS() {
+    return new Promise((resolve, reject) => {
+      if (stompClient && stompClient.connected) return resolve();
+
+      const socket = new SockJS('/ws');
+      stompClient = Stomp.over(socket);
+
+      stompClient.connect({}, () => {
+
+        stompClient.subscribe(`/topic/room/${roomId}/players`, msg => {
+          const data = JSON.parse(msg.body);
+          hostName = data.hostName;
+        });
+
+        stompClient.subscribe(`/topic/room/${roomId}/round-start`, msg => {
+          const data = JSON.parse(msg.body);
+          onRoundStart(data);
+        });
+
+        stompClient.subscribe(`/topic/room/${roomId}/round-result`, msg => {
+          sessionStorage.setItem("multiplayerRoundResult", msg.body);
+          window.location.href = '/modo-multijugador/resultados/' + encodeURIComponent(roomId);
+        });
+
+        stompClient.subscribe(`/topic/room/${roomId}/force-submit`, () => {
+          if (!alreadySubmitted) {
+            setTimeout(() => enviarRespuestas(), 150);
+          }
+        });
+
+        resolve();
+      }, reject);
+    });
+  }
+
+  function onRoundStart(data) {
+    alreadySubmitted = false;
+
+    document.getElementById('formRespuestas').style.display = '';
+    document.getElementById('esperando').style.display = 'none';
+
+    const letra = data.letra;
+    const categorias = data.categorias;
+    const tiempo = data.tiempoSegundos;
+
+    document.getElementById('rondaIndex').textContent = data.rondaIndex;
+    document.getElementById('totalRondas').textContent = data.totalRondas;
+
+    document.getElementById('letraBox').textContent = letra;
+
+    buildGrid(categorias);
+    setupValidacionInputs();
+
+    playCountdownAndShow(() => startTimer(tiempo));
+  }
+
+  function buildGrid(categorias) {
+    const grid = document.getElementById('gridCategorias');
+    grid.innerHTML = '';
+
+    categorias.forEach(cat => {
+      const nombre = cat.nombre || cat;
+
+      const div = document.createElement('div');
+      div.className = 'cat-card';
+      div.innerHTML = `
+        <label class="categoria-label">${nombre}</label>
+        <input type="text" class="form-control" data-categoria="${nombre}" />
+        <div class="error-texto"></div>
+      `;
+
+      grid.appendChild(div);
+    });
+  }
+
+  function enviarRespuestas() {
+    if (alreadySubmitted) return;
+    alreadySubmitted = true;
+
+    const inputs = document.querySelectorAll("input[data-categoria]");
+
+    for (let i of inputs) {
+      const txt = i.value.trim();
+      if (txt !== "" && contieneCaracteresInvalidos(txt)) {
+        i.classList.add("invalido");
+        const err = i.parentElement.querySelector(".error-texto");
+        err.textContent = "Solo se permiten letras (A-Z)";
+        err.style.display = "block";
+        alreadySubmitted = false;
+        return;
+      }
+    }
+
+    clearInterval(intervaloTimer);
+
+    const respuestas = [];
+    inputs.forEach(i => {
+      respuestas.push({
+        categoria: i.dataset.categoria,
+        texto: i.value
+      });
+    });
+
+    document.getElementById('formRespuestas').style.display = 'none';
+    document.getElementById('esperando').style.display = 'block';
+
+    const body = { respuestas, usarGPT: true };
+
+    connectWS().then(() => {
+      stompClient.send(`/app/room/${roomId}/submit`, {}, JSON.stringify(body));
+    });
+  }
+
+
+  document.getElementById('btnTutti').onclick = enviarRespuestas;
+
+  const valores = ["3","2","1","YA!"];
+
+  function playCountdownAndShow(callback) {
+    let i = 0;
+    const overlay = document.getElementById('countdown-overlay');
+    const num = document.getElementById('countdown-number');
+
+    overlay.style.display = 'flex';
+    num.style.opacity = 0;
+
+    const intervalo = setInterval(() => {
+      num.textContent = valores[i];
+      num.style.animation =
+          valores[i] === "YA!"
+          ? "boomFinal 1.1s ease forwards"
+          : "popViolet .95s ease forwards";
+
+      i++;
+
+      if (i >= valores.length) {
+        clearInterval(intervalo);
+
+        setTimeout(() => {
+          overlay.style.display = 'none';
+          document.getElementById('game-card').style.display = 'block';
+          callback();
+        }, 850);
+      }
+    }, 1000);
+  }
+
+  function startTimer(seg) {
+    let t = seg;
+    const timer = document.getElementById('timer');
+    timer.textContent = t;
+
+    if (intervaloTimer) clearInterval(intervaloTimer);
+
+    intervaloTimer = setInterval(() => {
+      t--;
+      timer.textContent = Math.max(t,0);
+
+      if (t <= 0) {
+        clearInterval(intervaloTimer);
+        enviarRespuestas();
+      }
+    }, 1000);
+  }
+
+  connectWS().then(() => {
+    const maybe = sessionStorage.getItem('multiplayerRoundStart');
+
+    if (maybe) {
+      const data = JSON.parse(maybe);
+      sessionStorage.removeItem('multiplayerRoundStart');
+      onRoundStart(data);
+
+    } else {
+      const overlay = document.getElementById('countdown-overlay');
+      const num = document.getElementById('countdown-number');
+      overlay.style.display = 'flex';
+      num.textContent = "Esperando...";
+      num.style.fontSize = "36px";
+      num.style.animation = "";
+    }
+  });
+
+</script>
+</body>
+</html>

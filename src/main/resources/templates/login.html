@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Login - Tutti Frutti</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+
+        body {
+            
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Poppins', sans-serif;
+
+            background: linear-gradient(135deg, #7a4dff, #8ecbff, #7a4dff);
+            background-size: 250% 250%;
+            animation: waveBg 4s ease-in-out infinite;
+
+            padding: 35px 0;
+        }
+
+        @keyframes waveBg {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .login-card {
+            width: 420px;
+            padding: 45px;
+            border-radius: 25px;
+
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+
+            box-shadow: 0 15px 45px rgba(95, 45, 171, 0.28);
+            text-align: center;
+
+            animation: cardDrop 0.7s ease-out;
+        }
+
+        @keyframes cardDrop {
+            0%   { opacity: 0; transform: translateY(-20px) scale(0.9); filter: blur(4px); }
+            70%  { opacity: 1; transform: translateY(4px) scale(1.03); filter: blur(0); }
+            100% { transform: translateY(0) scale(1); }
+        }
+
+        #logo {
+            width: 155px;
+            margin-bottom: 12px;
+
+            filter: drop-shadow(0 0 14px rgba(143, 92, 255, 0.55));
+            animation: glowPulse 3s infinite;
+        }
+
+        @keyframes glowPulse {
+            0%   { filter: drop-shadow(0 0 14px rgba(143, 92, 255, 0.5)); }
+            50%  { filter: drop-shadow(0 0 24px rgba(143, 92, 255, 0.75)); }
+            100% { filter: drop-shadow(0 0 14px rgba(143, 92, 255, 0.5)); }
+        }
+
+        h3 {
+            font-weight: 800;
+            color: #392b51;
+        }
+
+        .form-control {
+            border-radius: 12px;
+            padding: 13px 14px;
+
+            border: 2px solid #bda2ff; /* violeta suave */
+            background: rgba(255,255,255,0.90);
+
+            font-weight: 500;
+            color: #2d2d2d;
+        }
+
+        .form-control:focus {
+            border-color: #7d4bff;
+            box-shadow: 0 0 12px rgba(125, 75, 255, 0.45);
+        }
+
+        .btn-login {
+            width: 100%;
+            background: linear-gradient(135deg, #7a4dff, #3da4ff);
+            border: none;
+            color: white;
+
+            font-size: 17px;
+            font-weight: 700;
+
+            padding: 14px;
+            border-radius: 30px;
+
+            transition: 0.25s;
+            box-shadow: 0 5px 20px rgba(90, 40, 190, 0.35);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-3px) scale(1.03);
+            background: linear-gradient(135deg, #8c5eff, #1d90ff);
+            box-shadow: 0 8px 28px rgba(90, 40, 190, 0.45);
+        }
+
+        .login-card a {
+            color: #5f2dab;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .login-card a:hover {
+            color: #b067ff;
+        }
+
+        .alert-box {
+            padding: 14px 18px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+            animation: fadeInMsg 0.35s ease-out;
+        }
+
+        .alert-error {
+            background: linear-gradient(135deg, #ff4d6d, #ff2e4c);
+            box-shadow: 0 8px 28px rgba(255, 60, 90, 0.4);
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #3da4ff, #1f82ff);
+            box-shadow: 0 8px 28px rgba(60, 140, 255, 0.4);
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #00c97b, #00a764);
+            box-shadow: 0 8px 28px rgba(0, 190, 120, 0.4);
+        }
+
+        @keyframes fadeInMsg {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="login-card">
+
+    <img id="logo" src="/images/logoOficial.png" alt="Tutti Frutti Logo">
+
+    <h3 class="mb-4">Iniciar Sesión</h3>
+    
+    <div th:if="${param.error}" class="alert-box alert-error mb-3">
+        Nombre de usuario o contraseña incorrecto
+    </div>
+
+    <div th:if="${param.logout}" class="alert-box alert-info mb-3">
+        Sesión cerrada correctamente
+    </div>
+
+    <div th:if="${param.expired}" class="alert-box alert-info mb-3">
+        Tu sesión expiró por inactividad. Volvé a iniciar sesión.
+    </div>
+
+
+
+    <form method="post" action="/login">
+        <input class="form-control mb-3" type="text" name="username" placeholder="Usuario" required>
+        <input class="form-control mb-4" type="password" name="password" placeholder="Contraseña" required>
+
+        <button class="btn-login mb-3">Ingresar</button>
+    </form>
+
+    <a href="/register" class="text-decoration-none">Crear cuenta</a>
+</div>
+
+</body>
+</html>

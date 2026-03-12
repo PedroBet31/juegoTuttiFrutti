@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Seleccionar Categorías - Tutti Frutti</title>
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+
+    <style>
+
+        body {
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Poppins', sans-serif;
+
+            background: linear-gradient(135deg, #7a4dff, #8ecbff, #7a4dff);
+            background-size: 250% 250%;
+            animation: waveBg 4s ease-in-out infinite;
+            padding: 35px 0;
+        }
+
+        @keyframes waveBg {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .card-select {
+            width: 850px;
+            padding: 40px;
+            border-radius: 22px;
+            background: rgba(255,255,255,0.72);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 12px 38px rgba(95, 45, 171, 0.28);
+            animation: cardDrop 0.65s ease-out;
+        }
+
+        @keyframes cardDrop {
+            0%   { opacity: 0; transform: translateY(-20px) scale(0.92); filter: blur(4px); }
+            70%  { opacity: 1; transform: translateY(3px) scale(1.03); filter: blur(0); }
+            100% { transform: translateY(0) scale(1); }
+        }
+
+        h2 {
+            font-weight: 800;
+            color: #392b51;
+            margin-bottom: 25px;
+        }
+
+        .rounds-box, .timer-box, .cat-box {
+            background: rgba(255,255,255,0.85);
+            padding: 18px;
+            border-radius: 14px;
+            border: 2px solid rgba(125,75,255,0.2);
+        }
+
+        .start-btn {
+            margin-top: 25px;
+            font-size: 1.25rem;
+            padding: 14px;
+            border-radius: 30px;
+            width: 60%;
+            border: none;
+            background: linear-gradient(135deg, #7a4dff, #3da4ff);
+            color: white;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: 0 6px 22px rgba(90,40,190,0.35);
+            transition: 0.25s ease-in-out;
+        }
+
+        .btn-back {
+            margin-top: 25px;
+            font-size: 1.25rem;
+            padding: 14px;
+            border-radius: 30px;
+            width: 60%;
+            border: none;
+            background: rgba(50, 50, 50, 0.25);
+            color: #2b2b2b;
+            font-weight: 700;
+            box-shadow: 0 6px 22px rgba(90,40,190,0.35);
+        }
+
+        .custom-cat-item { margin-top: 6px; }
+
+    </style>
+</head>
+
+<body>
+
+<div class="card-select">
+    <h2 class="text-center">Configurá tu partida</h2>
+
+    <div id="catLimitWarning" class="alert alert-warning p-2 mb-3 text-center fw-bold" style="border-radius: 10px; display:none;">
+        ⚠ Podés elegir entre <b>1 y 8 categorías</b>.
+    </div>
+
+    <form method="POST" action="/crear-partida" id="formCrearPartida">
+
+        <div class="row">
+
+            <div class="col-6">
+                <label class="form-check-label mb-2">Categorías:</label>
+
+                <div id="categoriaContainer" class="cat-box mb-3">
+
+                    <div class="form-check">
+                        <input class="form-check-input catCheck" type="checkbox" name="categorias" value="Nombre" checked>
+                        <label class="form-check-label">Nombre</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input catCheck" type="checkbox" name="categorias" value="Apellido" checked>
+                        <label class="form-check-label">Apellido</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input catCheck" type="checkbox" name="categorias" value="País">
+                        <label class="form-check-label">País</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input catCheck" type="checkbox" name="categorias" value="Ciudad">
+                        <label class="form-check-label">Ciudad</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input catCheck" type="checkbox" name="categorias" value="Animal">
+                        <label class="form-check-label">Animal</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input catCheck" type="checkbox" name="categorias" value="Comida">
+                        <label class="form-check-label">Comida</label>
+                    </div>
+
+                </div>
+
+                <button type="button" id="btnAddCat" class="btn btn-outline-primary w-100 mb-2">
+                    ➕ Agregar categoría personalizada
+                </button>
+
+                <div id="customCatInput" style="display:none;">
+                    <input id="newCatName" type="text" class="form-control" placeholder="Ej: Color, Marca...">
+                    <button type="button" id="btnConfirmCat" class="btn btn-success w-100 mt-2">Agregar</button>
+                </div>
+
+            </div>
+
+            <div class="col-6">
+
+                <label class="form-check-label mb-2">Rondas:</label>
+                <div class="rounds-box mb-3">
+
+                    <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preRondas" value="3" checked><label class="form-check-label">3 rondas</label></div>
+                    <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preRondas" value="5"><label class="form-check-label">5 rondas</label></div>
+                    <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preRondas" value="8"><label class="form-check-label">8 rondas</label></div>
+                    <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preRondas" value="10"><label class="form-check-label">10 rondas</label></div>
+                    <div class="form-check mt-2"><input class="form-check-input" type="radio" name="preRondas" value="custom"><label class="form-check-label">Personalizado</label></div>
+
+                    <input id="customRounds" type="number" min="1" max="20"
+                           placeholder="1 - 20"
+                           class="form-control mt-2" disabled>
+                </div>
+
+                <label class="form-check-label mb-2">Tiempo por ronda:</label>
+                <div class="timer-box">
+                    <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preTiempo" value="30" checked><label class="form-check-label">30 segundos</label></div>
+                    <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preTiempo" value="45"><label class="form-check-label">45 segundos</label></div>
+                    <div class="form-check mb-2"><input class="form-check-input" type="radio" name="preTiempo" value="60"><label class="form-check-label">60 segundos</label></div>
+
+                    <div class="form-check mt-2"><input class="form-check-input" type="radio" name="preTiempo" value="custom"><label class="form-check-label">Personalizado</label></div>
+
+                    <input id="customTime" type="number" min="10" max="300"
+                           placeholder="10 - 300"
+                           class="form-control mt-2" disabled>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-center">
+            <button type="submit" class="start-btn">Crear Partida</button>
+        </div>
+
+        <div class="d-flex justify-content-center">
+            <a href="/lobby" class="btn btn-back menu-btn">Volver al Lobby</a>
+        </div>
+
+    </form>
+</div>
+
+<script>
+
+    const catWarning = document.getElementById("catLimitWarning");
+    const maxCategoryLength = 12;  
+
+    function validateCategoryLimit() {
+        const total = document.querySelectorAll('.catCheck:checked').length;
+
+        if (total > 8) {
+            this.checked = false;
+            catWarning.style.display = "block";
+            return;
+        }
+
+        if (total < 1) {
+            this.checked = true;
+            catWarning.style.display = "block";
+            return;
+        }
+
+        catWarning.style.display = "none";
+    }
+
+    document.querySelectorAll('.catCheck')
+        .forEach(chk => chk.addEventListener("change", validateCategoryLimit));
+
+    btnAddCat.onclick = () => {
+        customCatInput.style.display = "block";
+        newCatName.focus();
+    };
+
+    btnConfirmCat.onclick = () => {
+        const name = newCatName.value.trim();
+        if (!name) return;
+
+        if (name.length > maxCategoryLength) {
+            alert("La categoría no puede tener más de 12 caracteres.");
+            return;
+        }
+
+        const div = document.createElement("div");
+        div.className = "form-check custom-cat-item";
+        div.innerHTML = `
+            <input class="form-check-input catCheck" type="checkbox" name="categorias" value="${name}" checked>
+            <label class="form-check-label">${name}</label>
+        `;
+
+        categoriaContainer.appendChild(div);
+
+        // Activar la validación en el nuevo checkbox
+        div.querySelector(".catCheck").addEventListener("change", validateCategoryLimit);
+
+        newCatName.value = "";
+        customCatInput.style.display = "none";
+
+        validateCategoryLimit.call(div.querySelector(".catCheck"));
+    };
+
+    document.querySelectorAll('input[name="preRondas"]').forEach(r => {
+        r.addEventListener('change', () => {
+            customRounds.disabled = (r.value !== "custom");
+        });
+    });
+
+    document.querySelectorAll('input[name="preTiempo"]').forEach(r => {
+        r.addEventListener('change', () => {
+            customTime.disabled = (r.value !== "custom");
+        });
+    });
+
+    document.getElementById("formCrearPartida").addEventListener("submit", (e) => {
+
+        const total = document.querySelectorAll('.catCheck:checked').length;
+        if (total < 1 || total > 8) {
+            catWarning.style.display = "block";
+            e.preventDefault();
+            return;
+        }
+
+        const r = document.querySelector('input[name="preRondas"]:checked').value;
+        appendHidden("cantidadRondas", r === "custom" ? customRounds.value : r);
+
+        const t = document.querySelector('input[name="preTiempo"]:checked').value;
+        appendHidden("tiempoPorRonda", t === "custom" ? customTime.value : t);
+    });
+
+    function appendHidden(name, value) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        formCrearPartida.appendChild(input);
+    }
+
+</script>
+
+</body>
+</html>
